@@ -1,6 +1,6 @@
 # ELK Self-Hosted Deployment (Ansible)
 
-Ce dépôt contient une suite de playbooks Ansible permettant d'automatiser le déploiement de la stack ELK (Elasticsearch & Kibana) en mode auto-hébergé.
+Ce dépôt contient une suite de playbooks Ansible permettant d'automatiser le déploiement de la stack ELK (Elasticsearch & Kibana) en Self Hosted.
 
 ## Options de déploiement
 
