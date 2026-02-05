@@ -38,5 +38,5 @@ Pour une première prise en main ou un environnement de test, nous recommandons 
 Récupérez l'ensemble du projet et placez-vous dans le répertoire du scénario NoTLS :
 
 ```bash
-git clone [https://github.com/AxelZoldik/elk-deployment.git](https://github.com/AxelZoldik/elk-deployment.git)
-cd "elk-deployment/All In One/NoTLS"
+git clone git@github.com:AxelZoldik/elk-deployment.git
+cd All\ In\ One/NoTLS/
