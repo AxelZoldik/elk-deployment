@@ -39,4 +39,4 @@ Récupérez l'ensemble du projet et placez-vous dans le répertoire du scénario
 
 ```bash
 git clone git@github.com:AxelZoldik/elk-deployment.git
-cd All\ In\ One/NoTLS/
+cd elk-deployment/All\ In\ One/NoTLS/
