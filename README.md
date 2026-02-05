@@ -28,7 +28,7 @@ Le reste du processus est entièrement automatisé.
 
 
 
-## Quick Start (Démarrage Rapide)
+## Quick Start
 
 Pour une première prise en main ou un environnement de test, nous recommandons l'installation **All-In-One sans TLS**. Cela déploiera Elasticsearch et Kibana sur une même machine sans la complexité de la gestion des certificats.
 
