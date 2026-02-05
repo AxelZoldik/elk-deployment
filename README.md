@@ -40,3 +40,20 @@ Récupérez l'ensemble du projet et placez-vous dans le répertoire du scénario
 ```bash
 git clone git@github.com:AxelZoldik/elk-deployment.git
 cd elk-deployment/All\ In\ One/NoTLS/
+```
+Configurez correctement les variables du playbook.yml
+<img width="517" height="376" alt="image" src="https://github.com/user-attachments/assets/77e9bfa4-cf72-4041-bb9f-c23b55c74dd2" />
+Configurez votre fichier hosts :
+<img width="517" height="113" alt="image" src="https://github.com/user-attachments/assets/95ebc927-09e3-4c41-83f7-3ef8fde5d470" />
+
+Une fois prêt, lancez le playbook à votre manière : 
+```bash
+ansible-playbook -i hosts playbook-eskb.yml --ask-become-pass
+#Ou avec -k & -K si besoin de spécifier les mots de passes sudo
+```
+Résultat : 
+<img width="470" height="221" alt="image" src="https://github.com/user-attachments/assets/d8d8f91c-9e13-4a16-8827-d1c923795c71" />
+<img width="941" height="171" alt="image" src="https://github.com/user-attachments/assets/63b4a144-dfb1-4162-b2e1-f06ff06354b9" />
+
+Vous pourrez alors accéder à l'interface graphique Kibana via votre URL/IP http://fqdnORip:5601
+<img width="810" height="437" alt="image" src="https://github.com/user-attachments/assets/aeb20c7d-9067-41b5-bd7d-59e913a0ea8a" />
