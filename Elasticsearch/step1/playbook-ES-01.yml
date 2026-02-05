@@ -1,0 +1,84 @@
+- name: Install Elastic
+  hosts: hosts
+  become: yes
+
+  vars:
+#---------------Conf VAR--------------------
+    ES_CONF: /etc/elasticsearch/elasticsearch.yml
+#Adjust all the variables below
+    ES_CLUSTER_NAME: "CLUSTER-NAME"
+    ES_NETWORK_HOST: "0.0.0.0"
+    ES_HTTP_PORT: 9200
+
+    HOSTNAME: "FQDN"
+
+
+  tasks:
+    - name: Maj
+      apt:
+        update_cache: yes
+
+    - name: Install depend
+      apt:
+        name:
+          - apt-transport-https
+          - curl
+          - gnupg
+          - gpg
+        state: present
+        update_cache: yes
+
+    - name: Key GPG Elastic
+      get_url:
+        url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+        dest: /usr/share/keyrings/elasticsearch-keyring.gpg
+        mode: '0644'
+
+    - name: Elastic repo
+      apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/9.x/apt stable main"
+        state: present
+        filename: elasticsearch
+
+    - name: Install Elasticsearch
+      apt:
+        name: elasticsearch
+        state: present
+        update_cache: yes
+
+#----------------------CONF FILES---------------------
+
+
+    - name: Set cluster name
+      ansible.builtin.lineinfile:
+        path: "{{ ES_CONF }}"
+        regexp: '^cluster.name:'
+        line: "cluster.name: {{ ES_CLUSTER_NAME }}"
+        create: yes
+        backup: yes
+
+
+    - name: Set network host
+      ansible.builtin.lineinfile:
+        path: "{{ ES_CONF }}"
+        regexp: '^network.host:'
+        line: "network.host: {{ ES_NETWORK_HOST }}"
+        backup: yes
+
+    - name: Set HTTP port
+      ansible.builtin.lineinfile:
+        path: "{{ ES_CONF }}"
+        regexp: '^http.port:'
+        line: "http.port: {{ ES_HTTP_PORT }}"
+        backup: yes
+
+
+    - name: Enable and restart services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        enabled: yes
+        state: restarted
+        daemon_reload: yes
+      loop:
+        - elasticsearch
+

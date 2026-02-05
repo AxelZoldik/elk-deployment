@@ -1,0 +1,224 @@
+- name: TLS for Kibana
+  hosts: hosts
+  become: yes
+
+#MAKE SURE THAT YOU HAVE ALREADY ENROLLED KIBANA AND ELASTICSEARCH MANUALLY
+#USE THE SCRIPT IF KIBANA AND ELASTICSEARCH ARE ON THE SAME MACHINE
+
+  vars:
+#---------------Conf VAR--------------------
+    KB_CONF: /PATHTO/kibana.yml
+    KB_CERT: /PATHTO/kibana.crt
+    KB_KEY: /PATHTO/kibana.key
+    KB_CA: /PATHTO/roots.pem
+
+#---------------Certificate VAR--------------
+
+    kb_cert_dir: /PATHTO/certs
+    kb_fqdn: fqdn
+    kb_cert: kibana.crt
+    kb_key: kibana.key
+    kb_root_ca: roots.pem
+    kb_pass_jwk: pass_jwk.txt
+    kb_step_ca_url: https://yourAPI:port
+    kb_san_list:
+        - FQDN
+        - IP #If needed
+    kb_service_name: cert-renewer-kibana
+    kb_service_fullname: cert-renewer-kibana
+    kb_username: kibana
+
+
+  tasks:
+    - name: Maj
+      apt:
+        update_cache: yes
+
+    - name: Install depend
+      apt:
+        name:
+          - apt-transport-https
+          - curl
+          - gnupg
+          - gpg
+          - ca-certificates
+        state: present
+        update_cache: yes
+
+
+#--------------------Certification--------------------
+
+
+    - name: Add Smallstep GPG key
+      ansible.builtin.get_url:
+        url: https://packages.smallstep.com/keys/apt/repo-signing-key.gpg
+        dest: /etc/apt/trusted.gpg.d/smallstep.asc
+        mode: '0644'
+
+    - name: Add Smallstep APT repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/etc/apt/trusted.gpg.d/smallstep.asc] https://packages.smallstep.com/stable/debian debs main"
+        state: present
+        filename: smallstep
+
+    - name: Update APT cache after adding repository
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Install step-cli
+      ansible.builtin.apt:
+        name: step-cli
+        state: present
+
+    - name: Stop the Kibana service
+      ansible.builtin.service:
+        name: kibana
+        state: stopped
+
+    - name: Ensure cert directory exists for Kibana
+      ansible.builtin.file:
+          path: "{{ kb_cert_dir }}"
+          state: directory
+          owner: kibana
+          group: "{{ kb_username }}"
+          mode: '0660'
+          recurse: yes
+
+    - name: Deploy CA for Kibana
+      ansible.builtin.copy:
+          src: files/roots.pem
+          dest: "{{ kb_cert_dir }}/{{ kb_root_ca }}"
+          mode: '0644'
+
+    - name: Deploy JWK Token for Kibana
+      ansible.builtin.copy:
+          src: files/pass_jwk.txt
+          dest: "{{ kb_cert_dir }}/{{ kb_pass_jwk }}"
+          mode: '0644'
+
+    - name: Generate Kibana certificate
+      ansible.builtin.command: >
+          step ca certificate {{ kb_fqdn }}
+          {{ kb_cert_dir }}/{{ kb_cert }} {{ kb_cert_dir }}/{{ kb_key }}
+          --provisioner acmejwk
+          --provisioner-password-file {{ kb_cert_dir }}/{{ kb_pass_jwk }}
+          --ca-url {{ kb_step_ca_url }}
+          --root {{ kb_cert_dir }}/{{ kb_root_ca }}
+          {% for san in kb_san_list %} --san {{ san }} {% endfor %}
+          --force
+      args:
+          creates: "{{ kb_cert_dir }}/{{ kb_cert }}"
+
+    - name: Deploy systemd service for Kibana
+      ansible.builtin.copy:
+          src: files/{{ kb_service_fullname }}.service
+          dest: /etc/systemd/system/{{ kb_service_fullname }}.service
+          mode: '0644'
+
+    - name: Deploy systemd timer for Kibana
+      ansible.builtin.copy:
+          src: files/{{ kb_service_fullname }}.timer
+          dest: /etc/systemd/system/{{ kb_service_fullname }}.timer
+          mode: '0644'
+
+    - name: Reload systemd
+      ansible.builtin.systemd:
+          daemon_reload: yes
+
+    - name: Enable and start cert-renewer timer for Kibana
+      ansible.builtin.systemd:
+          name: "{{ kb_service_fullname }}.timer"
+          enabled: yes
+          state: started
+
+    - name: Enable and start cert-renewer service for Kibana
+      ansible.builtin.systemd:
+          name: "{{ kb_service_fullname }}.service"
+          enabled: yes
+          state: started
+
+    - name: Remove JWK password file after initial certificate creation for Kibana
+      ansible.builtin.file:
+          path: '{{ kb_cert_dir }}/{{ kb_pass_jwk }}'
+          state: absent
+
+
+
+#-------------------Access------------------------
+
+
+    - name: Ensure Kibana config directory ownership
+      ansible.builtin.file:
+        path: /etc/kibana
+        state: directory
+        recurse: yes
+        owner: root
+        group: kibana
+        mode: '0750'
+
+    - name: Set Kibana certs directory permissions
+      ansible.builtin.file:
+        path: /etc/kibana/certs
+        state: directory
+        owner: root
+        group: kibana
+        mode: '0750'
+
+    - name: Find all Kibana certs files
+      ansible.builtin.find:
+        paths: /etc/kibana/certs
+        file_type: file
+      register: kb_cert_files
+
+    - name: Set permissions on kibana cert files
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        owner: root
+        group: kibana
+        mode: '0640'
+      loop: "{{ kb_cert_files.files }}"
+
+    - name: Set Kibana roots.pem permissions
+      ansible.builtin.file:
+        path: /etc/kibana/certs/roots.pem
+        owner: root
+        group: kibana
+        mode: '0644'
+
+
+#---------------------TLS Configuration KI---------------------
+
+
+    - name: Enable Kibana SSL
+      ansible.builtin.lineinfile:
+        path: /etc/kibana/kibana.yml
+        regexp: '^server.ssl.enabled:'
+        line: 'server.ssl.enabled: true'
+        state: present
+
+    - name: Set Kibana SSL certificate
+      ansible.builtin.lineinfile:
+        path: /etc/kibana/kibana.yml
+        regexp: '^server.ssl.certificate:'
+        line: 'server.ssl.certificate: "{{ KB_CERT }}"'
+        state: present
+
+    - name: Set Kibana SSL key
+      ansible.builtin.lineinfile:
+        path: /etc/kibana/kibana.yml
+        regexp: '^server.ssl.key:'
+        line: 'server.ssl.key: "{{ KB_KEY }}"'
+        state: present
+
+    - name: Set Kibana CA certificate
+      ansible.builtin.lineinfile:
+        path: /etc/kibana/kibana.yml
+        regexp: '^elasticsearch.ssl.certificateAuthorities:'
+        line: 'elasticsearch.ssl.certificateAuthorities: [ "{{ KB_CA }}" ]'
+        state: present
+
+
+    - name: Restart Kibana service
+      ansible.builtin.service:
+        name: kibana
+        state: restarted

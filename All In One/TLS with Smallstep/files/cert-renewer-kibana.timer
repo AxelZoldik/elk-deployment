@@ -1,0 +1,12 @@
+[Unit]
+Description=Daily certificate renewal check
+Documentation=https://smallstep.com/docs/step-ca/renewal/#renewal-using-systemd-timers
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+AccuracySec=1h
+RandomizedDelaySec=30m
+
+[Install]
+WantedBy=timers.target

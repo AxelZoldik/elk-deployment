@@ -1,0 +1,87 @@
+- name: Install Kibana
+  hosts: hosts
+  become: yes
+
+  vars:
+#---------------Conf VAR--------------------
+    KB_CONF: /etc/kibana/kibana.yml
+#Adjust variables
+
+    KB_SERVER_PORT: 5601
+    KB_SERVER_HOST: "0.0.0.0"
+    KB_SERVER_NAME: "NAME"
+    HOSTNAME: "HOSTNAME"
+
+
+  tasks:
+    - name: Maj
+      apt:
+        update_cache: yes
+
+    - name: Install depend
+      apt:
+        name:
+          - apt-transport-https
+          - curl
+          - gnupg
+          - gpg
+        state: present
+        update_cache: yes
+
+    - name: Key GPG Elastic
+      get_url:
+        url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+        dest: /usr/share/keyrings/elasticsearch-keyring.gpg
+        mode: '0644'
+
+    - name: Elastic repo
+      apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/9.x/apt stable main"
+        state: present
+        filename: elasticsearch
+
+    - name: Install Kibana
+      apt:
+        name: kibana
+        state: present
+        update_cache: yes
+
+
+#----------------------CONF FILES---------------------
+
+
+    - name: Set Kibana server port
+      ansible.builtin.lineinfile:
+        path: "{{ KB_CONF }}"
+        regexp: '^server.port:'
+        line: "server.port: {{ KB_SERVER_PORT }}"
+        create: yes
+        backup: yes
+
+    - name: Set Kibana server host
+      ansible.builtin.lineinfile:
+        path: "{{ KB_CONF }}"
+        regexp: '^server.host:'
+        line: "server.host: \"{{ KB_SERVER_HOST }}\""
+        backup: yes
+
+    - name: Set Kibana server name
+      ansible.builtin.lineinfile:
+        path: "{{ KB_CONF }}"
+        regexp: '^server.name:'
+        line: "server.name: \"{{ KB_SERVER_NAME }}\""
+        backup: yes
+
+    - name: Enable and restart services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        enabled: yes
+        state: restarted
+        daemon_reload: yes
+      loop:
+        - kibana
+
+    - name: Restart Kibana service
+      ansible.builtin.service:
+        name: kibana
+        state: restarted

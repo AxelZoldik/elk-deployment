@@ -1,0 +1,32 @@
+[Unit]
+Description=Certificate renewer for %I
+After=network-online.target
+Documentation=https://smallstep.com/docs/step-ca/certificate-authority-server-production , https://smallstep.com/docs/step-ca/renewal/#renewal-using->StartLimitIntervalSec=0
+PartOf=cert-renewer.target
+
+[Service]
+Type=oneshot
+User=root
+
+Environment=STEPPATH=/PATHTO/certs \
+            CERT_LOCATION=/PATHTO/elastic.crt \
+            KEY_LOCATION=/PATHTO/elastic.key \
+            CA_URL=https://API-StepCA:port \
+            ROOT_CA=/PATHTO/roots.pem \
+            SERVICE=elasticsearch
+
+; ExecCondition checks if the certificate is ready for renewal,
+; based on the exit status of the command.
+; (In systemd <242, you can use ExecStartPre= here.)
+ExecCondition=/usr/bin/step certificate needs-renewal ${CERT_LOCATION}
+
+; ExecStart renews the certificate, if ExecStartPre was successful.
+ExecStart=/usr/bin/step ca renew ${CERT_LOCATION} ${KEY_LOCATION} -f --ca-url ${CA_URL} --root ${ROOT_CA}
+
+; Try to reload or restart the systemd service that relies on this cert-renewer
+; If the relying service doesn't exist, forge ahead.
+; (In systemd <229, use `reload-or-try-restart` instead of `try-reload-or-restart`)
+ExecStartPost=/usr/bin/env sh -c "! systemctl --quiet is-active ${SERVICE}.service || systemctl try-reload-or-restart ${SERVICE}.service"
+
+[Install]
+WantedBy=multi-user.target
