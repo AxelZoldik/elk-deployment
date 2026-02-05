@@ -1,6 +1,5 @@
-**NoTLS**
-Ce Playbook sert à installer Elasticsearch et Kibana sur une même machine sans certificats et donc de chiffrement.
+### 1. All-In-One (AIO)
+Déploiement complet sur une seule machine.
 
-**TLS With Smallstep**
-Le playbook sert à installer Elasticsearch et Kibana sur une même machine avec certificats via le server PKI de Step-CA.
-Le playbook appel des fichiers dans le sous dossier files\
+* **NoTLS** : Ce Playbook sert à installer Elasticsearch et Kibana sur une même machine sans certificats et donc sans chiffrement.
+* **TLS With Smallstep** : Ce Playbook sert à installer Elasticsearch et Kibana sur une même machine avec des certificats via le serveur PKI de Step-CA. Le playbook appelle des fichiers spécifiques situés dans le sous-dossier `files/`.
