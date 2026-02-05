@@ -25,3 +25,18 @@ Le déploiement TLS est automatisé via **Smallstep** et une API Step-CA.
 ## Configuration requise
 Avant de lancer un playbook, il est **impératif de vérifier les variables** dans les fichiers YAML pour s'assurer qu'elles correspondent à votre environnement (adresses IP, tokens Smallstep, configurations).
 Le reste du processus est entièrement automatisé.
+
+
+
+## Quick Start (Démarrage Rapide)
+
+Pour une première prise en main ou un environnement de test, nous recommandons l'installation **All-In-One sans TLS**. Cela déploiera Elasticsearch et Kibana sur une même machine sans la complexité de la gestion des certificats.
+
+>  **Dossier cible :** [All In One/NoTLS](https://github.com/AxelZoldik/elk-deployment/tree/main/All%20In%20One/NoTLS)
+
+### 1. Cloner le dépôt
+Récupérez l'ensemble du projet et placez-vous dans le répertoire du scénario NoTLS :
+
+```bash
+git clone [https://github.com/AxelZoldik/elk-deployment.git](https://github.com/AxelZoldik/elk-deployment.git)
+cd "elk-deployment/All In One/NoTLS"
